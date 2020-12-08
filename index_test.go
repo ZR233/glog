@@ -33,3 +33,18 @@ func TestNewProcessor2(t *testing.T) {
 		time.Sleep(time.Second)
 	}
 }
+func testPanic() {
+	panic("test")
+}
+
+func TestWithModule(t *testing.T) {
+	NewProcessor("test")
+
+	defer func() {
+		if p := recover(); p != nil {
+			WithModule("module").WithPanicStack().Warn(p)
+		}
+	}()
+
+	testPanic()
+}

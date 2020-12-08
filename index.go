@@ -6,7 +6,9 @@ import (
 	"github.com/ZR233/glog/adaptor"
 	"github.com/ZR233/glog/adaptor/file"
 	"github.com/ZR233/glog/adaptor/logstash"
+	"github.com/ZR233/glog/helper"
 	"github.com/sirupsen/logrus"
+	"os"
 	"reflect"
 	"sync"
 	"time"
@@ -32,6 +34,12 @@ type Processor struct {
 	mu         sync.Mutex
 }
 
+var processor *Processor
+
+type Entry struct {
+	logrus.Entry
+}
+
 func NewWriterConfigLogstash() *adaptor.ConfigLogstash {
 	return &adaptor.ConfigLogstash{}
 }
@@ -40,6 +48,7 @@ func NewProcessor(appName string) *Processor {
 	p := &Processor{
 		appName: appName,
 	}
+	processor = p
 	p.ctx, p.cancel = context.WithCancel(context.Background())
 	logrus.SetFormatter(&TextFormatter{})
 	p.fileWriter = &file.Core{}
@@ -104,6 +113,8 @@ func (p *Processor) GetHook() *Hook {
 
 func (p *Processor) log(entry *logrus.Entry) {
 	entry.Data["app"] = p.appName
+	entry.Data["hostname"], _ = os.Hostname()
+
 	p.mu.Lock()
 	writers := make([]adaptor.Writer, len(p.writers))
 	copy(writers, p.writers)
@@ -143,7 +154,7 @@ func (p *Processor) workRetry() {
 				logs := p.fileWriter.RetryWrite()
 				lCount := len(logs)
 				if lCount > 0 {
-					logrus.Debug("[glog]write tmp log(%d)", len(logs))
+					logrus.Debugf("[glog]write tmp log(%d)", len(logs))
 					for _, log := range logs {
 						for _, w := range writers {
 							w.Write(log)
@@ -153,4 +164,12 @@ func (p *Processor) workRetry() {
 			}
 		}
 	}
+}
+func WithModule(module string) *Entry {
+	return &Entry{*logrus.WithField("module", module)}
+}
+
+// 函数在recover层级调用
+func (e *Entry) WithPanicStack() *Entry {
+	return &Entry{*e.WithField("stack", helper.StackTrace(3))}
 }
