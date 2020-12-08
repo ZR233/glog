@@ -10,8 +10,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"os"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
+)
+
+const (
+	FieldKeyModule = "module"
 )
 
 type TextFormatter struct {
@@ -26,15 +31,12 @@ func (t TextFormatter) Format(e *logrus.Entry) (o []byte, err error) {
 
 // 日志处理类
 type Processor struct {
-	appName    string
+	adaptor.CoreBase
 	fileWriter *file.Core
 	writers    []adaptor.Writer
-	ctx        context.Context
 	cancel     context.CancelFunc
 	mu         sync.Mutex
 }
-
-var processor *Processor
 
 type Entry struct {
 	logrus.Entry
@@ -44,15 +46,15 @@ func NewWriterConfigLogstash() *adaptor.ConfigLogstash {
 	return &adaptor.ConfigLogstash{}
 }
 
-func NewProcessor(appName string) *Processor {
-	p := &Processor{
-		appName: appName,
-	}
-	processor = p
-	p.ctx, p.cancel = context.WithCancel(context.Background())
+func NewProcessor(appName, modulePrefix string) *Processor {
+	p := &Processor{}
+	p.AppName = appName
+	p.ModulePrefix = modulePrefix
+
+	p.Ctx, p.cancel = context.WithCancel(context.Background())
 	logrus.SetFormatter(&TextFormatter{})
 	p.fileWriter = &file.Core{}
-	p.fileWriter.Run(nil, appName, p.ctx)
+	p.fileWriter.Run(nil, &p.CoreBase)
 	logrus.AddHook(p.GetHook())
 
 	return p
@@ -75,7 +77,7 @@ func (p *Processor) addWriter(config adaptor.WriterConfig) {
 	default:
 		panic(fmt.Errorf("type (%s) is not writer config", reflect.TypeOf(config).Name()))
 	}
-	writer.Run(config, p.appName, p.ctx)
+	writer.Run(config, &p.CoreBase)
 	go p.workDealWriteFail(writer)
 
 	p.writers = append(p.writers, writer)
@@ -85,7 +87,7 @@ func (p *Processor) workDealWriteFail(writer adaptor.Writer) {
 	c := writer.WriteFail()
 	for {
 		select {
-		case <-p.ctx.Done():
+		case <-p.Ctx.Done():
 			return
 		case log := <-c:
 			p.fileWriter.Write(log)
@@ -112,8 +114,15 @@ func (p *Processor) GetHook() *Hook {
 }
 
 func (p *Processor) log(entry *logrus.Entry) {
-	entry.Data["app"] = p.appName
+	entry.Data["app"] = p.AppName
 	entry.Data["hostname"], _ = os.Hostname()
+	modulePrefix := p.ModulePrefix
+	if v, ok := entry.Data[FieldKeyModule]; ok {
+		if s, ok2 := v.(string); ok2 {
+			modulePrefix = strings.Join([]string{modulePrefix, s}, ".")
+		}
+	}
+	entry.Data[FieldKeyModule] = modulePrefix
 
 	p.mu.Lock()
 	writers := make([]adaptor.Writer, len(p.writers))
@@ -144,7 +153,7 @@ func (p *Processor) getOkWriters() (writers []adaptor.Writer) {
 func (p *Processor) workRetry() {
 	for {
 		select {
-		case <-p.ctx.Done():
+		case <-p.Ctx.Done():
 			return
 		case <-time.After(time.Second):
 			writers := p.getOkWriters()

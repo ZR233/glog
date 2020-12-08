@@ -8,14 +8,14 @@ import (
 )
 
 func TestNewProcessor(t *testing.T) {
-	NewProcessor("test")
-
+	NewProcessor("test", "m1")
+	WithModule("sec").Info("3-")
 	logrus.Info("4-")
 	logrus.Info("5-")
 	logrus.Info("6-")
 }
 func TestNewProcessor2(t *testing.T) {
-	p := NewProcessor("test")
+	p := NewProcessor("test", "m1")
 	cfg := NewWriterConfigLogstash()
 	cfg.ZkHosts = []string{"bsw-ubuntu:2181"}
 	logrus.SetLevel(logrus.DebugLevel)
@@ -38,7 +38,7 @@ func testPanic() {
 }
 
 func TestWithModule(t *testing.T) {
-	NewProcessor("test")
+	NewProcessor("test", "m1")
 
 	defer func() {
 		if p := recover(); p != nil {
@@ -47,4 +47,13 @@ func TestWithModule(t *testing.T) {
 	}()
 
 	testPanic()
+}
+func TestWithModule2(t *testing.T) {
+	p := NewProcessor("test", "m1")
+
+	cfg := NewWriterConfigLogstash()
+	cfg.ZkHosts = []string{"bsw-ubuntu:2181"}
+	p.AddWriters(cfg)
+
+	time.Sleep(time.Minute * 5)
 }

@@ -2,7 +2,6 @@ package file
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/ZR233/glog/adaptor"
@@ -19,6 +18,7 @@ type Core struct {
 	logFile *os.File
 	fmt     logrus.Formatter
 	adaptor.WriterBase
+	*adaptor.CoreBase
 }
 
 func (c *Core) Write(entry *logrus.Entry) {
@@ -37,13 +37,12 @@ func (c *Core) Write(entry *logrus.Entry) {
 	}
 }
 func (c *Core) logFileName() string {
-	return fmt.Sprintf("%s.log", c.AppName)
+	return fmt.Sprintf("%s.%s.log", c.AppName, c.ModulePrefix)
 }
 
-func (c *Core) Run(config adaptor.WriterConfig, prefix string, ctx context.Context) {
+func (c *Core) Run(config adaptor.WriterConfig, base *adaptor.CoreBase) {
 	c.fmt = &logrus.JSONFormatter{}
-	c.AppName = prefix
-	c.Ctx = ctx
+	c.CoreBase = base
 	var err error
 	c.logFile, err = os.OpenFile(c.logFileName(), os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {

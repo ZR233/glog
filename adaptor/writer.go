@@ -21,17 +21,21 @@ type WriterConfig interface {
 }
 
 type Writer interface {
-	Run(config WriterConfig, prefix string, ctx context.Context)
+	Run(config WriterConfig, coreBase *CoreBase)
 	Write(entry *logrus.Entry)
 	WriteFail() <-chan *logrus.Entry
 	GetStatus() Status
 }
 
+type CoreBase struct {
+	AppName, ModulePrefix string
+	Ctx                   context.Context
+}
+
 type WriterBase struct {
 	FailChan chan *logrus.Entry
-	Ctx      context.Context
-	AppName  string
-	Status   Status
+	CoreBase
+	Status Status
 	sync.Mutex
 }
 
