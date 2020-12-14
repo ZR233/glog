@@ -19,9 +19,9 @@ type LoggerGorm struct {
 
 func NewLoggerGorm(slowThreshold time.Duration) logger.Interface {
 	var (
-		traceStr     = "%s\n[%.3fms] [rows:%v] %s"
-		traceWarnStr = "%s %s\n[%.3fms] [rows:%v] %s"
-		traceErrStr  = "%s %s\n[%.3fms] [rows:%v] %s"
+		traceStr     = "%s\n[%.3fms] [rows:%v]"
+		traceWarnStr = "%s %s\n[%.3fms] [rows:%v]"
+		traceErrStr  = "%s %s\n[%.3fms] [rows:%v]"
 	)
 	return &LoggerGorm{
 		SlowThreshold: slowThreshold,
@@ -80,10 +80,11 @@ func (l LoggerGorm) Trace(_ context.Context, begin time.Time, fc func() (string,
 		entry.Warn(msg)
 	default:
 		sql, rows := fc()
+		entry = entry.WithField("sql", sql)
 		if rows == -1 {
-			msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, "-", sql)
+			msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, "-")
 		} else {
-			msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, rows, sql)
+			msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, rows)
 		}
 		if l.LogLevel == logger.Info {
 			entry.Info(msg)
