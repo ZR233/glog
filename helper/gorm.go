@@ -38,11 +38,7 @@ func (l *LoggerGorm) LogMode(level logger.LogLevel) logger.Interface {
 }
 
 func (l LoggerGorm) Info(_ context.Context, s string, i ...interface{}) {
-	if l.LogLevel == logger.Info {
-		logrus.Infof(s, i...)
-	} else {
-		logrus.Debugf(s, i...)
-	}
+	logrus.Infof(s, i...)
 }
 
 func (l LoggerGorm) Warn(_ context.Context, s string, i ...interface{}) {
@@ -81,17 +77,13 @@ func (l LoggerGorm) Trace(_ context.Context, begin time.Time, fc func() (string,
 		}
 		entry.Warn(msg)
 	default:
-		sql, rows := fc()
-
-		if rows == -1 {
-			msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, "-", sql)
-		} else {
-			msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, rows, sql)
-		}
 		if l.LogLevel == logger.Info {
+			if rows == -1 {
+				msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, "-", sql)
+			} else {
+				msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, rows, sql)
+			}
 			entry.Info(msg)
-		} else {
-			entry.Debug(msg)
 		}
 	}
 }
