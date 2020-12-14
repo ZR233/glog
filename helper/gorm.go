@@ -49,27 +49,18 @@ func (l LoggerGorm) Error(_ context.Context, s string, i ...interface{}) {
 	logrus.Errorf(s, i...)
 }
 
-func (LoggerGorm) genEntry(fc func() (string, int64), elapsed time.Duration) (
-	entry *logrus.Entry,
-	rows int64,
-	file string,
-) {
-	sql, rows := fc()
-	file = utils.FileWithLineNum()
-	entry = logrus.WithFields(logrus.Fields{
-		"execTime": elapsed.Milliseconds(),
-		"file":     file,
-		"sql":      sql,
-	})
-	return
-}
-
 func (l LoggerGorm) Trace(_ context.Context, begin time.Time, fc func() (string, int64), err error) {
 	elapsed := time.Since(begin)
 	msg := ""
 	switch {
 	case err != nil && !errors.Is(err, gorm.ErrRecordNotFound):
-		entry, rows, file := l.genEntry(fc, elapsed)
+		sql, rows := fc()
+		file := utils.FileWithLineNum()
+		entry := logrus.WithFields(logrus.Fields{
+			"execTime": elapsed.Milliseconds(),
+			"file":     file,
+			"sql":      sql,
+		})
 
 		if rows == -1 {
 			msg = fmt.Sprintf(l.traceErrStr, file, err, float64(elapsed.Nanoseconds())/1e6, "-")
@@ -78,7 +69,13 @@ func (l LoggerGorm) Trace(_ context.Context, begin time.Time, fc func() (string,
 		}
 		entry.Error(msg)
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0:
-		entry, rows, file := l.genEntry(fc, elapsed)
+		sql, rows := fc()
+		file := utils.FileWithLineNum()
+		entry := logrus.WithFields(logrus.Fields{
+			"execTime": elapsed.Milliseconds(),
+			"file":     file,
+			"sql":      sql,
+		})
 
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
 		if rows == -1 {
@@ -89,9 +86,13 @@ func (l LoggerGorm) Trace(_ context.Context, begin time.Time, fc func() (string,
 		entry.Warn(msg)
 	default:
 		if l.LogLevel == logger.Info {
-			entry, rows, file := l.genEntry(fc, elapsed)
-			sql := entry.Data["sql"]
-			delete(entry.Data, "sql")
+			sql, rows := fc()
+			file := utils.FileWithLineNum()
+			entry := logrus.WithFields(logrus.Fields{
+				"execTime": elapsed.Milliseconds(),
+				"file":     file,
+			})
+
 			if rows == -1 {
 				msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, "-", sql)
 			} else {
