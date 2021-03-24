@@ -3,10 +3,10 @@ package glog
 import (
 	"context"
 	"fmt"
-	"github.com/ZR233/glog/adaptor"
-	"github.com/ZR233/glog/adaptor/file"
-	"github.com/ZR233/glog/adaptor/logstash"
-	"github.com/ZR233/glog/helper"
+	"github.com/ZR233/glog/v2/adaptor"
+	"github.com/ZR233/glog/v2/adaptor/file"
+	"github.com/ZR233/glog/v2/adaptor/logstash"
+	"github.com/ZR233/glog/v2/helper"
 	"github.com/sirupsen/logrus"
 	"os"
 	"reflect"
@@ -18,6 +18,12 @@ import (
 const (
 	FieldKeyModule = "module"
 )
+
+var processor *Processor
+
+func Init(appName, module string) {
+	processor = NewProcessor(appName, module)
+}
 
 type TextFormatter struct {
 }
@@ -44,6 +50,11 @@ type Entry struct {
 
 func NewWriterConfigLogstash() *adaptor.ConfigLogstash {
 	return &adaptor.ConfigLogstash{}
+}
+func UseKafka(zkHosts []string) {
+	cfg := NewWriterConfigLogstash()
+	cfg.ZkHosts = zkHosts
+	processor.AddWriters(cfg)
 }
 
 func NewProcessor(appName, modulePrefix string) *Processor {

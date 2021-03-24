@@ -3,8 +3,8 @@ package logstash
 import (
 	"fmt"
 	"github.com/Shopify/sarama"
-	"github.com/ZR233/glog/adaptor"
-	"github.com/ZR233/glog/helper"
+	"github.com/ZR233/glog/v2/adaptor"
+	"github.com/ZR233/glog/v2/helper"
 	"github.com/sirupsen/logrus"
 	"time"
 )

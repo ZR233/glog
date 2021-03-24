@@ -12,7 +12,7 @@ type Log struct {
 	Level     logrus.Level `gorm:"index:idx_log_level"`
 	Code      int          `gorm:"type:int;index:idx_log_code"`
 	OptUserId int
-	ExecTime  int
+	ExecTime  time.Duration
 	Msg       string
 	tableName string `gorm:"-"`
 }
