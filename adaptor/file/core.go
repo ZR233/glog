@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ZR233/glog/adaptor"
+	"github.com/ZR233/glog/v2/adaptor"
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
