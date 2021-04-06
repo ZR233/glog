@@ -12,7 +12,6 @@ import (
 )
 
 type LoggerGorm struct {
-	Debug                               bool
 	LogLevel                            logger.LogLevel
 	traceStr, traceErrStr, traceWarnStr string
 	SlowThreshold                       time.Duration
@@ -86,20 +85,20 @@ func (l LoggerGorm) Trace(_ context.Context, begin time.Time, fc func() (string,
 		}
 		entry.Warn(msg)
 	default:
-		if l.Debug {
-			sql, rows := fc()
-			file := utils.FileWithLineNum()
-			entry := logrus.WithFields(logrus.Fields{
-				"execTime": elapsed.Milliseconds(),
-				"file":     file,
-			})
 
-			if rows == -1 {
-				msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, "-", sql)
-			} else {
-				msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, rows, sql)
-			}
-			entry.Info(msg)
+		sql, rows := fc()
+		file := utils.FileWithLineNum()
+		entry := logrus.WithFields(logrus.Fields{
+			"execTime": elapsed.Milliseconds(),
+			"file":     file,
+		})
+
+		if rows == -1 {
+			msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, "-", sql)
+		} else {
+			msg = fmt.Sprintf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, rows, sql)
 		}
+		entry.Debug(msg)
+
 	}
 }
