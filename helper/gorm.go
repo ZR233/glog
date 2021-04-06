@@ -12,6 +12,7 @@ import (
 )
 
 type LoggerGorm struct {
+	Debug                               bool
 	LogLevel                            logger.LogLevel
 	traceStr, traceErrStr, traceWarnStr string
 	SlowThreshold                       time.Duration
@@ -85,7 +86,7 @@ func (l LoggerGorm) Trace(_ context.Context, begin time.Time, fc func() (string,
 		}
 		entry.Warn(msg)
 	default:
-		if l.LogLevel == logger.Info {
+		if l.Debug {
 			sql, rows := fc()
 			file := utils.FileWithLineNum()
 			entry := logrus.WithFields(logrus.Fields{
