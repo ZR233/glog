@@ -18,7 +18,7 @@ type LoggerGorm struct {
 	SlowThreshold                       time.Duration
 }
 
-func NewLoggerGorm(slowThreshold time.Duration) logger.Interface {
+func NewLoggerGorm(slowThreshold time.Duration) *LoggerGorm {
 	var (
 		traceStr     = "%s\n[%.3fms] [rows:%v] %s"
 		traceWarnStr = "%s %s\n[%.3fms] [rows:%v]"
